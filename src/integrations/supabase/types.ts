@@ -99,6 +99,42 @@ export type Database = {
         }
         Relationships: []
       }
+      inflacion: {
+        Row: {
+          anio: number
+          categoria: string
+          created_at: string
+          descripcion: string | null
+          id: string
+          mes: number
+          porcentaje_inflacion: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          anio: number
+          categoria: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          mes: number
+          porcentaje_inflacion: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          anio?: number
+          categoria?: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          mes?: number
+          porcentaje_inflacion?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ingresos_extras: {
         Row: {
           categoria: string | null

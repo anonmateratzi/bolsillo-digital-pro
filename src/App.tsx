@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +11,7 @@ import CambioDivisaPage from "./pages/CambioDivisaPage";
 import InversionesPage from "./pages/InversionesPage";
 import EgresosPage from "./pages/EgresosPage";
 import NotFound from "./pages/NotFound";
+import InflacionPage from "./pages/InflacionPage";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +29,7 @@ const App = () => (
               <Route path="/cambio-divisa" element={<CambioDivisaPage />} />
               <Route path="/inversiones" element={<InversionesPage />} />
               <Route path="/egresos" element={<EgresosPage />} />
+              <Route path="/inflacion" element={<InflacionPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </ProtectedRoute>
