@@ -9,7 +9,234 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      cambios_divisa: {
+        Row: {
+          created_at: string
+          fecha: string
+          id: string
+          moneda_destino: string
+          moneda_origen: string
+          monto_destino: number
+          monto_origen: number
+          notas: string | null
+          tasa_cambio: number
+          ticker_origen: string | null
+          tipo_origen: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fecha?: string
+          id?: string
+          moneda_destino: string
+          moneda_origen: string
+          monto_destino: number
+          monto_origen: number
+          notas?: string | null
+          tasa_cambio: number
+          ticker_origen?: string | null
+          tipo_origen?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fecha?: string
+          id?: string
+          moneda_destino?: string
+          moneda_origen?: string
+          monto_destino?: number
+          monto_origen?: number
+          notas?: string | null
+          tasa_cambio?: number
+          ticker_origen?: string | null
+          tipo_origen?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      egresos: {
+        Row: {
+          cashback_moneda: string | null
+          cashback_porcentaje: number | null
+          categoria: string | null
+          created_at: string
+          descripcion: string
+          descuento_moneda: string | null
+          descuento_porcentaje: number | null
+          fecha: string
+          id: string
+          moneda: string
+          monto: number
+          user_id: string
+        }
+        Insert: {
+          cashback_moneda?: string | null
+          cashback_porcentaje?: number | null
+          categoria?: string | null
+          created_at?: string
+          descripcion: string
+          descuento_moneda?: string | null
+          descuento_porcentaje?: number | null
+          fecha?: string
+          id?: string
+          moneda?: string
+          monto: number
+          user_id: string
+        }
+        Update: {
+          cashback_moneda?: string | null
+          cashback_porcentaje?: number | null
+          categoria?: string | null
+          created_at?: string
+          descripcion?: string
+          descuento_moneda?: string | null
+          descuento_porcentaje?: number | null
+          fecha?: string
+          id?: string
+          moneda?: string
+          monto?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ingresos_extras: {
+        Row: {
+          categoria: string | null
+          created_at: string
+          descripcion: string
+          fecha: string
+          id: string
+          moneda: string
+          monto: number
+          user_id: string
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string
+          descripcion: string
+          fecha?: string
+          id?: string
+          moneda?: string
+          monto: number
+          user_id: string
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string
+          descripcion?: string
+          fecha?: string
+          id?: string
+          moneda?: string
+          monto?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      inversiones: {
+        Row: {
+          activa: boolean
+          cantidad_activos: number | null
+          created_at: string
+          fecha_compra: string
+          id: string
+          moneda_origen: string
+          monto_invertido: number | null
+          nombre_activo: string | null
+          precio_compra: number | null
+          ticker: string
+          tipo_inversion: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activa?: boolean
+          cantidad_activos?: number | null
+          created_at?: string
+          fecha_compra?: string
+          id?: string
+          moneda_origen?: string
+          monto_invertido?: number | null
+          nombre_activo?: string | null
+          precio_compra?: number | null
+          ticker: string
+          tipo_inversion: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activa?: boolean
+          cantidad_activos?: number | null
+          created_at?: string
+          fecha_compra?: string
+          id?: string
+          moneda_origen?: string
+          monto_invertido?: number | null
+          nombre_activo?: string | null
+          precio_compra?: number | null
+          ticker?: string
+          tipo_inversion?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sueldo_fijo: {
+        Row: {
+          activo: boolean
+          created_at: string
+          fecha_inicio: string
+          id: string
+          moneda: string
+          monto: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          fecha_inicio?: string
+          id?: string
+          moneda?: string
+          monto: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          fecha_inicio?: string
+          id?: string
+          moneda?: string
+          monto?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
