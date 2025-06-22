@@ -1,14 +1,14 @@
 
 import React from 'react';
 import { Layout } from '@/components/Layout';
-import { Dashboard } from '@/components/Dashboard';
+import { Egresos } from '@/components/Egresos';
 
-const Index = () => {
+const EgresosPage = () => {
   return (
     <Layout>
-      <Dashboard />
+      <Egresos />
     </Layout>
   );
 };
 
-export default Index;
+export default EgresosPage;
