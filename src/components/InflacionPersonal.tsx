@@ -1,346 +1,273 @@
 
-import React, { useState, useMemo } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import React from 'react';
+import { TrendingUp, Calendar, DollarSign } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEgresos } from '@/hooks/useEgresos';
-import { useIngresos } from '@/hooks/useIngresos';
-import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 
 export const InflacionPersonal: React.FC = () => {
-  const { egresos, loading: egresosLoading } = useEgresos();
-  const { sueldoFijo, ingresosExtras, loading: ingresosLoading } = useIngresos();
-  const [filtroCategoria, setFiltroCategoria] = useState('');
-  const [filtroAnio, setFiltroAnio] = useState('');
+  const { egresos, loading } = useEgresos();
 
-  // Calcular datos por mes
-  const datosPorMes = useMemo(() => {
-    const gastosPorMes: Record<string, {
-      anio: number;
-      mes: number;
-      total: number;
-      categorias: Record<string, number>;
-      fechaKey: string;
-    }> = {};
-
-    egresos.forEach(egreso => {
-      const fecha = new Date(egreso.fecha);
-      const anio = fecha.getFullYear();
-      const mes = fecha.getMonth() + 1;
-      const fechaKey = `${anio}-${mes.toString().padStart(2, '0')}`;
-      
-      if (!gastosPorMes[fechaKey]) {
-        gastosPorMes[fechaKey] = {
-          anio,
-          mes,
-          total: 0,
-          categorias: {},
-          fechaKey
-        };
-      }
-      
-      const monto = egreso.moneda === 'USD' ? egreso.monto * 1000 : egreso.monto;
-      gastosPorMes[fechaKey].total += monto;
-      
-      if (egreso.categoria) {
-        gastosPorMes[fechaKey].categorias[egreso.categoria] = 
-          (gastosPorMes[fechaKey].categorias[egreso.categoria] || 0) + monto;
-      }
-    });
-
-    return Object.values(gastosPorMes).sort((a, b) => 
-      b.anio - a.anio || b.mes - a.mes
-    );
-  }, [egresos]);
-
-  // Calcular inflación personal (variación porcentual mes a mes)
-  const inflacionPersonal = useMemo(() => {
-    const datos = datosPorMes.slice().reverse(); // Orden cronológico
-    const inflacion: Array<{
-      anio: number;
-      mes: number;
-      inflacionTotal: number;
-      inflacionPorCategoria: Record<string, number>;
-      totalGastos: number;
-      fechaKey: string;
-    }> = [];
-
-    for (let i = 1; i < datos.length; i++) {
-      const mesActual = datos[i];
-      const mesAnterior = datos[i - 1];
-      
-      // Inflación total
-      const inflacionTotal = mesAnterior.total > 0 
-        ? ((mesActual.total - mesAnterior.total) / mesAnterior.total) * 100
-        : 0;
-      
-      // Inflación por categoría
-      const inflacionPorCategoria: Record<string, number> = {};
-      const todasCategorias = new Set([
-        ...Object.keys(mesActual.categorias),
-        ...Object.keys(mesAnterior.categorias)
-      ]);
-      
-      todasCategorias.forEach(categoria => {
-        const gastoActual = mesActual.categorias[categoria] || 0;
-        const gastoAnterior = mesAnterior.categorias[categoria] || 0;
-        
-        if (gastoAnterior > 0) {
-          inflacionPorCategoria[categoria] = ((gastoActual - gastoAnterior) / gastoAnterior) * 100;
-        } else if (gastoActual > 0) {
-          inflacionPorCategoria[categoria] = 100; // Nueva categoría
-        }
-      });
-      
-      inflacion.push({
-        anio: mesActual.anio,
-        mes: mesActual.mes,
-        inflacionTotal,
-        inflacionPorCategoria,
-        totalGastos: mesActual.total,
-        fechaKey: mesActual.fechaKey
-      });
-    }
-    
-    return inflacion.reverse(); // Más reciente primero
-  }, [datosPorMes]);
-
-  // Filtrar datos
-  const datosFiltrados = useMemo(() => {
-    return inflacionPersonal.filter(dato => {
-      const cumpleAnio = !filtroAnio || dato.anio.toString() === filtroAnio;
-      return cumpleAnio;
-    });
-  }, [inflacionPersonal, filtroAnio]);
-
-  // Calcular porcentaje de ahorro
-  const ahorrosPorMes = useMemo(() => {
-    const sueldoMensual = sueldoFijo?.monto || 0;
-    const ingresosExtrasMensuales = ingresosExtras.reduce((sum, ingreso) => {
-      const fecha = new Date(ingreso.fecha);
-      const mesActual = new Date().getMonth() + 1;
-      const anioActual = new Date().getFullYear();
-      
-      if (fecha.getMonth() + 1 === mesActual && fecha.getFullYear() === anioActual) {
-        const monto = ingreso.moneda === 'USD' ? ingreso.monto * 1000 : ingreso.monto;
-        return sum + monto;
-      }
-      return sum;
-    }, 0);
-    
-    return datosPorMes.map(mes => {
-      const ingresoTotal = sueldoMensual + ingresosExtrasMensuales;
-      const porcentajeAhorro = ingresoTotal > 0 ? ((ingresoTotal - mes.total) / ingresoTotal) * 100 : 0;
-      
-      return {
-        ...mes,
-        ingresoTotal,
-        ahorro: ingresoTotal - mes.total,
-        porcentajeAhorro
-      };
-    });
-  }, [datosPorMes, sueldoFijo, ingresosExtras]);
-
-  // Obtener años únicos para filtro
-  const aniosUnicos = useMemo(() => {
-    return [...new Set(datosPorMes.map(dato => dato.anio))].sort((a, b) => b - a);
-  }, [datosPorMes]);
-
-  // Obtener categorías únicas
-  const categoriasUnicas = useMemo(() => {
-    const categorias = new Set<string>();
-    egresos.forEach(egreso => {
-      if (egreso.categoria) categorias.add(egreso.categoria);
-    });
-    return Array.from(categorias).sort();
-  }, [egresos]);
-
-  const formatMes = (mes: number) => {
-    const meses = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-    ];
-    return meses[mes - 1];
-  };
-
-  if (egresosLoading || ingresosLoading) {
+  if (loading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-center text-gray-500">Cargando datos de inflación personal...</p>
-        </CardContent>
-      </Card>
+      <div className="flex justify-center items-center h-64">
+        <p className="text-gray-500">Cargando datos de inflación...</p>
+      </div>
     );
   }
 
-  if (inflacionPersonal.length === 0) {
+  // Obtener mes actual y anterior
+  const fechaActual = new Date();
+  const mesActual = fechaActual.getMonth() + 1;
+  const anioActual = fechaActual.getFullYear();
+  
+  const fechaAnterior = new Date(fechaActual);
+  fechaAnterior.setMonth(fechaAnterior.getMonth() - 1);
+  const mesAnterior = fechaAnterior.getMonth() + 1;
+  const anioAnterior = fechaAnterior.getFullYear();
+
+  // Calcular gastos por mes
+  const gastosActuales = egresos.filter(egreso => {
+    const fecha = new Date(egreso.fecha);
+    return fecha.getMonth() + 1 === mesActual && fecha.getFullYear() === anioActual;
+  });
+
+  const gastosAnteriores = egresos.filter(egreso => {
+    const fecha = new Date(egreso.fecha);
+    return fecha.getMonth() + 1 === mesAnterior && fecha.getFullYear() === anioAnterior;
+  });
+
+  // Calcular totales
+  const totalActual = gastosActuales.reduce((sum, egreso) => {
+    const monto = egreso.moneda === 'USD' ? egreso.monto * 1000 : egreso.monto;
+    return sum + monto;
+  }, 0);
+
+  const totalAnterior = gastosAnteriores.reduce((sum, egreso) => {
+    const monto = egreso.moneda === 'USD' ? egreso.monto * 1000 : egreso.monto;
+    return sum + monto;
+  }, 0);
+
+  // Calcular inflación personal
+  const inflacionPersonal = totalAnterior > 0 ? ((totalActual - totalAnterior) / totalAnterior) * 100 : 0;
+
+  // Agrupar gastos por categoría para el mes actual
+  const gastosPorCategoria = gastosActuales.reduce((acc, egreso) => {
+    const categoria = egreso.categoria || 'Sin categoría';
+    const monto = egreso.moneda === 'USD' ? egreso.monto * 1000 : egreso.monto;
+    
+    if (!acc[categoria]) {
+      acc[categoria] = { actual: 0, anterior: 0 };
+    }
+    acc[categoria].actual += monto;
+    return acc;
+  }, {} as Record<string, { actual: number; anterior: number }>);
+
+  // Agregar gastos del mes anterior por categoría
+  gastosAnteriores.forEach(egreso => {
+    const categoria = egreso.categoria || 'Sin categoría';
+    const monto = egreso.moneda === 'USD' ? egreso.monto * 1000 : egreso.monto;
+    
+    if (!gastosPorCategoria[categoria]) {
+      gastosPorCategoria[categoria] = { actual: 0, anterior: 0 };
+    }
+    gastosPorCategoria[categoria].anterior += monto;
+  });
+
+  // Calcular inflación por categoría
+  const inflacionPorCategoria = Object.entries(gastosPorCategoria).map(([categoria, datos]) => {
+    const inflacion = datos.anterior > 0 ? ((datos.actual - datos.anterior) / datos.anterior) * 100 : 0;
+    return {
+      categoria,
+      actual: datos.actual,
+      anterior: datos.anterior,
+      inflacion
+    };
+  }).sort((a, b) => Math.abs(b.inflacion) - Math.abs(a.inflacion));
+
+  const nombreMesActual = new Date(anioActual, mesActual - 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  const nombreMesAnterior = new Date(anioAnterior, mesAnterior - 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+  // Si no hay gastos en absoluto
+  if (egresos.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-center text-gray-500">
-            No hay suficientes datos para calcular la inflación personal. 
-            Necesitas al menos gastos de dos meses diferentes.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Inflación Personal</h1>
+          <p className="text-gray-600 mt-2">Analiza cómo varía tu inflación personal basada en tus gastos reales</p>
+        </div>
+
+        <Card>
+          <CardContent className="p-8 text-center">
+            <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay datos suficientes</h3>
+            <p className="text-gray-600">
+              Para calcular tu inflación personal necesitas registrar gastos. 
+              Comienza agregando tus egresos para ver el análisis.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Año</label>
-              <select
-                value={filtroAnio}
-                onChange={(e) => setFiltroAnio(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Todos los años</option>
-                {aniosUnicos.map((anio) => (
-                  <option key={anio} value={anio}>
-                    {anio}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
-              <select
-                value={filtroCategoria}
-                onChange={(e) => setFiltroCategoria(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Inflación Total</option>
-                {categoriasUnicas.map((categoria) => (
-                  <option key={categoria} value={categoria}>
-                    {categoria}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-end">
-              <Button 
-                onClick={() => {
-                  setFiltroAnio('');
-                  setFiltroCategoria('');
-                }} 
-                variant="outline" 
-                className="w-full"
-              >
-                Limpiar Filtros
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Inflación Personal</h1>
+        <p className="text-gray-600 mt-2">Analiza cómo varía tu inflación personal basada en tus gastos reales</p>
+      </div>
 
-      {/* Resumen de inflación */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Tu Inflación Personal</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {datosFiltrados.slice(0, 3).map((dato) => (
-              <div key={dato.fechaKey} className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">
-                    {formatMes(dato.mes)} {dato.anio}
-                  </h3>
-                  <div className="flex items-center">
-                    {dato.inflacionTotal > 0 ? (
-                      <TrendingUp className="h-4 w-4 text-red-500 mr-1" />
-                    ) : (
-                      <TrendingDown className="h-4 w-4 text-green-500 mr-1" />
-                    )}
-                    <span className={`font-bold ${dato.inflacionTotal > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {dato.inflacionTotal.toFixed(2)}%
-                    </span>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 mt-1">
-                  {filtroCategoria 
-                    ? `Inflación en ${filtroCategoria}`
-                    : 'Inflación total de gastos'
-                  }
-                </p>
-                <p className="text-xs text-gray-500">
-                  Gastos: ${dato.totalGastos.toLocaleString()}
+      {/* Resumen de Inflación */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Inflación Personal</p>
+                <p className={`text-2xl font-bold ${totalAnterior > 0 ? (inflacionPersonal >= 0 ? 'text-red-600' : 'text-green-600') : 'text-gray-900'}`}>
+                  {totalAnterior > 0 ? `${inflacionPersonal >= 0 ? '+' : ''}${inflacionPersonal.toFixed(1)}%` : 'N/A'}
                 </p>
               </div>
-            ))}
-          </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <DollarSign className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Gasto {nombreMesActual}</p>
+                <p className="text-2xl font-bold text-gray-900">${totalActual.toLocaleString()} ARS</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <Calendar className="h-6 w-6 text-gray-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Gasto {nombreMesAnterior}</p>
+                <p className="text-2xl font-bold text-gray-900">${totalAnterior.toLocaleString()} ARS</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Comparación Mensual */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Comparación Mensual</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {totalAnterior === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-600">
+                No hay datos del mes anterior ({nombreMesAnterior}) para comparar.
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                La inflación personal se calculará cuando tengas gastos de al menos 2 meses.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-semibold text-gray-900">Variación Total</p>
+                  <p className="text-sm text-gray-600">
+                    {nombreMesAnterior} → {nombreMesActual}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className={`text-lg font-bold ${inflacionPersonal >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {inflacionPersonal >= 0 ? '+' : ''}${(totalActual - totalAnterior).toLocaleString()} ARS
+                  </p>
+                  <p className={`text-sm ${inflacionPersonal >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {inflacionPersonal >= 0 ? '+' : ''}{inflacionPersonal.toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Tabla detallada */}
+      {/* Inflación por Categoría */}
+      {inflacionPorCategoria.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Inflación por Categoría</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {inflacionPorCategoria.map((item, index) => (
+                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900">{item.categoria}</p>
+                    <p className="text-sm text-gray-600">
+                      ${item.anterior.toLocaleString()} → ${item.actual.toLocaleString()} ARS
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-bold ${item.anterior > 0 ? (item.inflacion >= 0 ? 'text-red-600' : 'text-green-600') : 'text-gray-900'}`}>
+                      {item.anterior > 0 ? `${item.inflacion >= 0 ? '+' : ''}${item.inflacion.toFixed(1)}%` : 'Nuevo'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Resumen del Mes Actual */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            Detalle de Inflación y Ahorro
-          </CardTitle>
+          <CardTitle>Resumen de {nombreMesActual}</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Período</TableHead>
-                <TableHead className="text-right">Gastos Totales</TableHead>
-                <TableHead className="text-right">
-                  {filtroCategoria ? `Inflación ${filtroCategoria}` : 'Inflación Total'}
-                </TableHead>
-                <TableHead className="text-right">Ahorro</TableHead>
-                <TableHead className="text-right">% Ahorro</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {datosFiltrados.map((dato) => {
-                const ahorroMes = ahorrosPorMes.find(a => a.fechaKey === dato.fechaKey);
-                const inflacionMostrar = filtroCategoria 
-                  ? dato.inflacionPorCategoria[filtroCategoria] || 0
-                  : dato.inflacionTotal;
-                
-                return (
-                  <TableRow key={dato.fechaKey}>
-                    <TableCell>
-                      {formatMes(dato.mes)} {dato.anio}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ${dato.totalGastos.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className={`font-semibold ${
-                        inflacionMostrar > 0 ? 'text-red-600' : 'text-green-600'
-                      }`}>
-                        {inflacionMostrar.toFixed(2)}%
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className={`font-semibold ${
-                        (ahorroMes?.ahorro || 0) > 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        ${(ahorroMes?.ahorro || 0).toLocaleString()}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className={`font-semibold ${
-                        (ahorroMes?.porcentajeAhorro || 0) > 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {(ahorroMes?.porcentajeAhorro || 0).toFixed(1)}%
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-2">Gastos por Categoría</p>
+              <div className="space-y-2">
+                {Object.entries(gastosPorCategoria).map(([categoria, datos]) => (
+                  <div key={categoria} className="flex justify-between">
+                    <span className="text-sm text-gray-700">{categoria}</span>
+                    <span className="text-sm font-medium">${datos.actual.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-2">Estadísticas</p>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-700">Total de gastos</span>
+                  <span className="text-sm font-medium">{gastosActuales.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-700">Promedio por gasto</span>
+                  <span className="text-sm font-medium">
+                    ${gastosActuales.length > 0 ? (totalActual / gastosActuales.length).toLocaleString() : '0'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-700">Categorías únicas</span>
+                  <span className="text-sm font-medium">{Object.keys(gastosPorCategoria).length}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

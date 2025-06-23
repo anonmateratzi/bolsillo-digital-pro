@@ -178,6 +178,8 @@ export type Database = {
           moneda_origen: string
           monto_invertido: number | null
           nombre_activo: string | null
+          notas: string | null
+          precio_actual: number | null
           precio_compra: number | null
           ticker: string
           tipo_inversion: string
@@ -193,6 +195,8 @@ export type Database = {
           moneda_origen?: string
           monto_invertido?: number | null
           nombre_activo?: string | null
+          notas?: string | null
+          precio_actual?: number | null
           precio_compra?: number | null
           ticker: string
           tipo_inversion: string
@@ -208,6 +212,8 @@ export type Database = {
           moneda_origen?: string
           monto_invertido?: number | null
           nombre_activo?: string | null
+          notas?: string | null
+          precio_actual?: number | null
           precio_compra?: number | null
           ticker?: string
           tipo_inversion?: string
