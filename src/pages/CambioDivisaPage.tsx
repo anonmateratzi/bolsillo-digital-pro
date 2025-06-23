@@ -13,7 +13,7 @@ const CambioDivisaPage = () => {
           <p className="text-gray-600">Registra y consulta tus cambios de divisa</p>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-6">
           <CambioDivisaForm />
           <CambioDivisaList />
         </div>

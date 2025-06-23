@@ -39,8 +39,26 @@ export const useEgresos = () => {
       .single();
 
     if (error) throw error;
+    
     if (data) {
       setEgresos(prev => [data, ...prev]);
+      
+      // Si hay cashback, agregarlo como ingreso extra
+      if (data.cashback_porcentaje && data.cashback_porcentaje > 0) {
+        const cashbackMonto = (data.monto * data.cashback_porcentaje) / 100;
+        const cashbackMoneda = data.cashback_moneda || data.moneda;
+        
+        await supabase
+          .from('ingresos_extras')
+          .insert([{
+            user_id: user.id,
+            descripcion: `Cashback de ${data.descripcion}`,
+            monto: cashbackMonto,
+            moneda: cashbackMoneda,
+            categoria: 'Cashback',
+            fecha: data.fecha
+          }]);
+      }
     }
     return data;
   };
