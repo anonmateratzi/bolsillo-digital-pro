@@ -4,6 +4,7 @@ import { DollarSign, TrendingUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { useIngresos } from '@/hooks/useIngresos';
 import { useEgresos } from '@/hooks/useEgresos';
 import { useCambiosDivisa } from '@/hooks/useCambiosDivisa';
+import { BalancesTable } from '@/components/BalancesTable';
 
 export const Dashboard: React.FC = () => {
   const { sueldoFijo, ingresosExtras, loading: loadingIngresos } = useIngresos();
@@ -70,7 +71,10 @@ export const Dashboard: React.FC = () => {
         <p className="text-gray-600 mt-2">Resumen de tu situación financiera actual</p>
       </div>
 
-      {/* Resumen Cards */}
+      {/* Patrimonio Consolidado */}
+      <BalancesTable />
+
+      {/* Resumen Cards del mes actual */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
           <div className="flex items-center">
@@ -102,7 +106,7 @@ export const Dashboard: React.FC = () => {
               <TrendingUp className="h-6 w-6 text-blue-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Balance</p>
+              <p className="text-sm font-medium text-gray-600">Balance Mensual</p>
               <p className={`text-2xl font-bold ${totalIngresos - egresosMesActual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 ${(totalIngresos - egresosMesActual).toLocaleString()} ARS
               </p>

@@ -281,7 +281,18 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      balances_consolidados: {
+        Row: {
+          cantidad: number | null
+          moneda: string | null
+          precio_unitario_ars: number | null
+          ticker: string | null
+          tipo: string | null
+          user_id: string | null
+          valor_ars: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
