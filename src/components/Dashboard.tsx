@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { DollarSign, TrendingUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { DollarSign, TrendingUp, ArrowDown, ArrowUpDown, Percent } from 'lucide-react';
 import { useIngresos } from '@/hooks/useIngresos';
 import { useEgresos } from '@/hooks/useEgresos';
 import { useCambiosDivisa } from '@/hooks/useCambiosDivisa';
@@ -30,6 +30,9 @@ export const Dashboard: React.FC = () => {
       return fecha.getMonth() + 1 === currentMonth && fecha.getFullYear() === currentYear;
     })
     .reduce((sum, egreso) => sum + (egreso.moneda === 'USD' ? egreso.monto * 1000 : egreso.monto), 0);
+
+  const ahorroMensual = totalIngresos - egresosMesActual;
+  const porcentajeAhorroMensual = totalIngresos > 0 ? (ahorroMensual / totalIngresos) * 100 : 0;
 
   // Últimos movimientos
   const ultimosMovimientos = [
@@ -77,7 +80,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Resumen Cards del mes actual - Responsive grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 px-4 md:px-0">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-6 px-4 md:px-0">
         <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
@@ -108,22 +111,38 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow col-span-2 lg:col-span-1">
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
               <TrendingUp className="h-4 w-4 md:h-6 md:w-6 text-blue-600" />
             </div>
             <div className="ml-2 md:ml-4 min-w-0 flex-1">
               <p className="text-xs md:text-sm font-medium text-gray-600 truncate">Balance Mensual</p>
-              <p className={`text-lg md:text-2xl font-bold truncate ${totalIngresos - egresosMesActual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${(totalIngresos - egresosMesActual).toLocaleString()}
+              <p className={`text-lg md:text-2xl font-bold truncate ${ahorroMensual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                ${ahorroMensual.toLocaleString()}
               </p>
               <p className="text-xs text-gray-500">ARS</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow col-span-2 lg:col-span-1">
+        {/* Nueva card destacada para % de ahorro */}
+        <div className="bg-gradient-to-r from-green-500 to-green-600 p-4 md:p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow text-white">
+          <div className="flex items-center">
+            <div className="p-2 bg-white/20 rounded-lg">
+              <Percent className="h-4 w-4 md:h-6 md:w-6 text-white" />
+            </div>
+            <div className="ml-2 md:ml-4 min-w-0 flex-1">
+              <p className="text-xs md:text-sm font-medium text-green-100 truncate">% Sueldo Ahorrado</p>
+              <p className="text-lg md:text-2xl font-bold text-white truncate">
+                {porcentajeAhorroMensual.toFixed(1)}%
+              </p>
+              <p className="text-xs text-green-100">Este mes</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
               <ArrowUpDown className="h-4 w-4 md:h-6 md:w-6 text-purple-600" />
@@ -191,12 +210,12 @@ export const Dashboard: React.FC = () => {
               <div className="flex justify-between mb-1">
                 <span className="text-sm font-medium text-gray-700">Ahorro</span>
                 <span className="text-sm text-gray-500">
-                  {totalIngresos > 0 ? Math.max(((totalIngresos - egresosMesActual) / totalIngresos * 100), 0).toFixed(1) : 0}%
+                  {porcentajeAhorroMensual.toFixed(1)}%
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div className="bg-blue-600 h-2 rounded-full" style={{ 
-                  width: `${totalIngresos > 0 ? Math.max(((totalIngresos - egresosMesActual) / totalIngresos) * 100, 0) : 0}%` 
+                  width: `${Math.max(porcentajeAhorroMensual, 0)}%` 
                 }}></div>
               </div>
             </div>

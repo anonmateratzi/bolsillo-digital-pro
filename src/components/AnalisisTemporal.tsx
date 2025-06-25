@@ -1,238 +1,250 @@
 
-import React, { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, Calendar, BarChart3 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { useIngresos } from '@/hooks/useIngresos';
 import { useEgresos } from '@/hooks/useEgresos';
-import { useBalancesConsolidados } from '@/hooks/useBalancesConsolidados';
+import { useCambiosDivisa } from '@/hooks/useCambiosDivisa';
+import { TrendingUp, DollarSign, Calendar, PieChart as PieChartIcon } from 'lucide-react';
 
 export const AnalisisTemporal: React.FC = () => {
-  const [periodoSeleccionado, setPeriodoSeleccionado] = useState('6');
+  const [periodoSeleccionado, setPeriodoSeleccionado] = useState('6meses');
   const { sueldoFijo, ingresosExtras } = useIngresos();
   const { egresos } = useEgresos();
-  const { balances } = useBalancesConsolidados();
+  const { cambios } = useCambiosDivisa();
 
-  // Generar datos de evolución mensual
-  const generarDatosEvolucion = () => {
-    const meses = parseInt(periodoSeleccionado);
-    const datos = [];
-    const hoy = new Date();
-    
-    for (let i = meses - 1; i >= 0; i--) {
-      const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
-      const mesAnio = `${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
-      
-      // Calcular ingresos del mes
-      const ingresosMes = ingresosExtras
-        .filter(ing => {
-          const fechaIng = new Date(ing.fecha);
-          return fechaIng.getMonth() === fecha.getMonth() && fechaIng.getFullYear() === fecha.getFullYear();
-        })
-        .reduce((sum, ing) => sum + (ing.moneda === 'USD' ? ing.monto * 1000 : ing.monto), 0);
-      
-      const totalIngresos = (sueldoFijo?.monto || 0) + ingresosMes;
-      
-      // Calcular egresos del mes
-      const egresosMes = egresos
-        .filter(eg => {
-          const fechaEg = new Date(eg.fecha);
-          return fechaEg.getMonth() === fecha.getMonth() && fechaEg.getFullYear() === fecha.getFullYear();
-        })
-        .reduce((sum, eg) => sum + (eg.moneda === 'USD' ? eg.monto * 1000 : eg.monto), 0);
-      
-      datos.push({
-        mes: mesAnio,
-        ingresos: totalIngresos,
-        egresos: egresosMes,
-        balance: totalIngresos - egresosMes
+  const obtenerFechaInicio = (periodo: string) => {
+    const ahora = new Date();
+    switch (periodo) {
+      case '3meses':
+        return new Date(ahora.getFullYear(), ahora.getMonth() - 3, 1);
+      case '6meses':
+        return new Date(ahora.getFullYear(), ahora.getMonth() - 6, 1);
+      case '1ano':
+        return new Date(ahora.getFullYear() - 1, ahora.getMonth(), 1);
+      default:
+        return new Date(ahora.getFullYear(), ahora.getMonth() - 6, 1);
+    }
+  };
+
+  const datosEvolucion = useMemo(() => {
+    const fechaInicio = obtenerFeclaInicio(periodoSeleccionado);
+    const mesesData: Record<string, { mes: string; ingresos: number; egresos: number; ahorro: number }> = {};
+
+    // Generar meses vacíos
+    for (let d = new Date(fechaInicio); d <= new Date(); d.setMonth(d.getMonth() + 1)) {
+      const mesKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      mesesData[mesKey] = {
+        mes: d.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' }),
+        ingresos: 0,
+        egresos: 0,
+        ahorro: 0
+      };
+    }
+
+    // Agregar sueldo fijo a cada mes
+    if (sueldoFijo) {
+      Object.keys(mesesData).forEach(mesKey => {
+        const sueldoEnARS = sueldoFijo.moneda === 'USD' ? (sueldoFijo.monto || 0) * 1000 : (sueldoFijo.monto || 0);
+        mesesData[mesKey].ingresos += sueldoEnARS;
       });
     }
-    
-    return datos;
-  };
 
-  // Generar datos de categorías de egresos
-  const generarDatosCategorias = () => {
-    const categorias = {};
-    
-    egresos.forEach(egreso => {
-      const categoria = egreso.categoria || 'Sin categoría';
-      const monto = egreso.moneda === 'USD' ? egreso.monto * 1000 : egreso.monto;
-      
-      if (categorias[categoria]) {
-        categorias[categoria] += monto;
-      } else {
-        categorias[categoria] = monto;
+    // Agregar ingresos extras
+    ingresosExtras.forEach(ingreso => {
+      const fecha = new Date(ingreso.fecha);
+      if (fecha >= fechaInicio) {
+        const mesKey = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+        if (mesesData[mesKey]) {
+          const montoEnARS = ingreso.moneda === 'USD' ? ingreso.monto * 1000 : ingreso.monto;
+          mesesData[mesKey].ingresos += montoEnARS;
+        }
       }
     });
-    
-    return Object.entries(categorias)
-      .map(([categoria, monto]) => ({ categoria, monto }))
-      .sort((a, b) => b.monto - a.monto);
-  };
 
-  const datosEvolucion = generarDatosEvolucion();
-  const datosCategorias = generarDatosCategorias();
-  const patrimonioTotal = balances.reduce((sum, balance) => sum + balance.valor_ars, 0);
+    // Agregar egresos
+    egresos.forEach(egreso => {
+      const fecha = new Date(egreso.fecha);
+      if (fecha >= fechaInicio) {
+        const mesKey = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+        if (mesesData[mesKey]) {
+          const montoEnARS = egreso.moneda === 'USD' ? egreso.monto * 1000 : egreso.monto;
+          mesesData[mesKey].egresos += montoEnARS;
+        }
+      }
+    });
+
+    // Calcular ahorro
+    Object.keys(mesesData).forEach(mesKey => {
+      mesesData[mesKey].ahorro = mesesData[mesKey].ingresos - mesesData[mesKey].egresos;
+    });
+
+    return Object.values(mesesData);
+  }, [periodoSeleccionado, sueldoFijo, ingresosExtras, egresos]);
+
+  const datosCategoriasEgresos = useMemo(() => {
+    const fechaInicio = obtenerFechaInicio(periodoSeleccionado);
+    const categorias: Record<string, number> = {};
+
+    egresos.forEach(egreso => {
+      const fecha = new Date(egreso.fecha);
+      if (fecha >= fechaInicio) {
+        const categoria = egreso.categoria || 'Sin categoría';
+        const montoEnARS = egreso.moneda === 'USD' ? egreso.monto * 1000 : egreso.monto;
+        categorias[categoria] = (categorias[categoria] || 0) + montoEnARS;
+      }
+    });
+
+    return Object.entries(categorias).map(([categoria, monto]) => ({
+      categoria,
+      monto
+    })).sort((a, b) => b.monto - a.monto);
+  }, [periodoSeleccionado, egresos]);
+
+  const coloresPie = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00', '#ff00ff'];
+
+  const promedioAhorro = datosEvolucion.length > 0 
+    ? datosEvolucion.reduce((sum, item) => sum + item.ahorro, 0) / datosEvolucion.length 
+    : 0;
+
+  const promedioIngresos = datosEvolucion.length > 0 
+    ? datosEvolucion.reduce((sum, item) => sum + item.ingresos, 0) / datosEvolucion.length 
+    : 0;
+
+  const porcentajeAhorroPromedio = promedioIngresos > 0 ? (promedioAhorro / promedioIngresos) * 100 : 0;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Análisis Temporal</h1>
-          <p className="text-gray-600 mt-2">Evolución de tus finanzas a lo largo del tiempo</p>
+          <p className="text-gray-600 mt-2">Evolución de tus finanzas en el tiempo</p>
         </div>
         
-        <div className="mt-4 md:mt-0">
-          <Select value={periodoSeleccionado} onValueChange={setPeriodoSeleccionado}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="3">Últimos 3 meses</SelectItem>
-              <SelectItem value="6">Últimos 6 meses</SelectItem>
-              <SelectItem value="12">Último año</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <Select value={periodoSeleccionado} onValueChange={setPeriodoSeleccionado}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="3meses">Últimos 3 meses</SelectItem>
+            <SelectItem value="6meses">Últimos 6 meses</SelectItem>
+            <SelectItem value="1ano">Último año</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Métricas principales */}
+      {/* Cards de resumen */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Patrimonio Total</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${patrimonioTotal.toLocaleString()} ARS
-                </p>
-              </div>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Promedio Mensual Ahorrado</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${promedioAhorro.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">ARS por mes</p>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Calendar className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Promedio Mensual</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${datosEvolucion.length > 0 ? 
-                    Math.round(datosEvolucion.reduce((sum, d) => sum + d.balance, 0) / datosEvolucion.length).toLocaleString() 
-                    : 0} ARS
-                </p>
-              </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">% Sueldo Ahorrado</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {porcentajeAhorroPromedio.toFixed(1)}%
             </div>
+            <p className="text-xs text-muted-foreground">Promedio del período</p>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <BarChart3 className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Mejor Mes</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${datosEvolucion.length > 0 ? 
-                    Math.max(...datosEvolucion.map(d => d.balance)).toLocaleString() 
-                    : 0} ARS
-                </p>
-              </div>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Promedio Ingresos</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${promedioIngresos.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">ARS por mes</p>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="evolucion" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="evolucion">Evolución Mensual</TabsTrigger>
-          <TabsTrigger value="categorias">Análisis por Categorías</TabsTrigger>
-          <TabsTrigger value="proyeccion">Proyecciones</TabsTrigger>
-        </TabsList>
+      {/* Gráfico de evolución */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <TrendingUp className="mr-2 h-5 w-5" />
+            Evolución Temporal
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={datosEvolucion}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="mes" />
+              <YAxis />
+              <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
+              <Legend />
+              <Line type="monotone" dataKey="ingresos" stroke="#82ca9d" name="Ingresos" />
+              <Line type="monotone" dataKey="egresos" stroke="#ff7300" name="Egresos" />
+              <Line type="monotone" dataKey="ahorro" stroke="#8884d8" name="Ahorro" />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="evolucion" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolución de Ingresos, Egresos y Balance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={datosEvolucion}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="mes" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => `$${value.toLocaleString()} ARS`} />
-                    <Line type="monotone" dataKey="ingresos" stroke="#10b981" strokeWidth={2} name="Ingresos" />
-                    <Line type="monotone" dataKey="egresos" stroke="#ef4444" strokeWidth={2} name="Egresos" />
-                    <Line type="monotone" dataKey="balance" stroke="#3b82f6" strokeWidth={3} name="Balance" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+      {/* Gráficos de barras y torta */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Ahorro por Mes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={datosEvolucion}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="mes" />
+                <YAxis />
+                <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, 'Ahorro']} />
+                <Bar dataKey="ahorro" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="categorias" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Egresos por Categoría</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={datosCategorias}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="categoria" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => `$${value.toLocaleString()} ARS`} />
-                    <Bar dataKey="monto" fill="#3b82f6" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="proyeccion" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Proyecciones Financieras</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <h3 className="font-semibold text-blue-900">Proyección 6 meses</h3>
-                    <p className="text-2xl font-bold text-blue-700">
-                      ${datosEvolucion.length > 0 ? 
-                        (patrimonioTotal + (datosEvolucion[datosEvolucion.length - 1]?.balance || 0) * 6).toLocaleString() 
-                        : 0} ARS
-                    </p>
-                    <p className="text-sm text-blue-600">Basado en tendencia actual</p>
-                  </div>
-                  
-                  <div className="p-4 bg-green-50 rounded-lg">
-                    <h3 className="font-semibold text-green-900">Proyección 1 año</h3>
-                    <p className="text-2xl font-bold text-green-700">
-                      ${datosEvolucion.length > 0 ? 
-                        (patrimonioTotal + (datosEvolucion[datosEvolucion.length - 1]?.balance || 0) * 12).toLocaleString() 
-                        : 0} ARS
-                    </p>
-                    <p className="text-sm text-green-600">Basado en tendencia actual</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <PieChartIcon className="mr-2 h-5 w-5" />
+              Egresos por Categoría
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={datosCategoriasEgresos}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ categoria, percent }) => `${categoria} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="monto"
+                >
+                  {datosCategoriasEgresos.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={coloresPie[index % coloresPie.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, 'Monto']} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

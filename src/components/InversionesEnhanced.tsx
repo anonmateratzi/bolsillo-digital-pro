@@ -6,10 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useInversiones } from '@/hooks/useInversiones';
 import { usePreciosRealTime } from '@/hooks/usePreciosRealTime';
 import { InversionModal } from '@/components/InversionModal';
+import { EditInversionModal } from '@/components/EditInversionModal';
+import type { Database } from '@/integrations/supabase/types';
+
+type Inversion = Database['public']['Tables']['inversiones']['Row'];
 
 export const InversionesEnhanced: React.FC = () => {
   const { inversiones, loading, updateInversion } = useInversiones();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedInversion, setSelectedInversion] = useState<Inversion | null>(null);
   
   // Obtener símbolos únicos de las inversiones
   const symbols = Array.from(new Set(inversiones.map(inv => inv.ticker)));
@@ -24,6 +30,11 @@ export const InversionesEnhanced: React.FC = () => {
         });
       }
     }
+  };
+
+  const handleEditClick = (inversion: Inversion) => {
+    setSelectedInversion(inversion);
+    setIsEditModalOpen(true);
   };
 
   const calcularGananciaPerdida = (inversion: typeof inversiones[0]) => {
@@ -209,7 +220,11 @@ export const InversionesEnhanced: React.FC = () => {
                           </div>
                           <p className="text-sm text-gray-600">{inversion.nombre_activo || 'Sin nombre'}</p>
                         </div>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditClick(inversion)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                       </div>
@@ -261,6 +276,12 @@ export const InversionesEnhanced: React.FC = () => {
       <InversionModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
+      />
+      
+      <EditInversionModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)} 
+        inversion={selectedInversion}
       />
     </div>
   );
