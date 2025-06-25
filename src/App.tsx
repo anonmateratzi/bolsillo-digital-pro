@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +11,7 @@ import IngresosPage from "./pages/IngresosPage";
 import CambioDivisaPage from "./pages/CambioDivisaPage";
 import InversionesPage from "./pages/InversionesPage";
 import EgresosPage from "./pages/EgresosPage";
+import AnalisisPage from "./pages/AnalisisPage";
 import NotFound from "./pages/NotFound";
 import InflacionPage from "./pages/InflacionPage";
 
@@ -29,6 +31,7 @@ const App = () => (
               <Route path="/cambio-divisa" element={<CambioDivisaPage />} />
               <Route path="/inversiones" element={<InversionesPage />} />
               <Route path="/egresos" element={<EgresosPage />} />
+              <Route path="/analisis" element={<AnalisisPage />} />
               <Route path="/inflacion" element={<InflacionPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

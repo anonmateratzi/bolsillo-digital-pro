@@ -65,85 +65,95 @@ export const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard Financiero</h1>
-        <p className="text-gray-600 mt-2">Resumen de tu situación financiera actual</p>
+    <div className="space-y-4 md:space-y-6">
+      <div className="px-4 md:px-0">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard Financiero</h1>
+        <p className="text-gray-600 mt-2 text-sm md:text-base">Resumen de tu situación financiera actual</p>
       </div>
 
       {/* Patrimonio Consolidado */}
-      <BalancesTable />
+      <div className="px-4 md:px-0">
+        <BalancesTable />
+      </div>
 
-      {/* Resumen Cards del mes actual */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+      {/* Resumen Cards del mes actual - Responsive grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 px-4 md:px-0">
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
-              <DollarSign className="h-6 w-6 text-green-600" />
+              <DollarSign className="h-4 w-4 md:h-6 md:w-6 text-green-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Ingresos del Mes</p>
-              <p className="text-2xl font-bold text-gray-900">${totalIngresos.toLocaleString()} ARS</p>
+            <div className="ml-2 md:ml-4 min-w-0 flex-1">
+              <p className="text-xs md:text-sm font-medium text-gray-600 truncate">Ingresos del Mes</p>
+              <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">
+                ${totalIngresos.toLocaleString()}
+              </p>
+              <p className="text-xs text-gray-500">ARS</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
           <div className="flex items-center">
             <div className="p-2 bg-red-100 rounded-lg">
-              <ArrowDown className="h-6 w-6 text-red-600" />
+              <ArrowDown className="h-4 w-4 md:h-6 md:w-6 text-red-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Egresos del Mes</p>
-              <p className="text-2xl font-bold text-gray-900">${egresosMesActual.toLocaleString()} ARS</p>
+            <div className="ml-2 md:ml-4 min-w-0 flex-1">
+              <p className="text-xs md:text-sm font-medium text-gray-600 truncate">Egresos del Mes</p>
+              <p className="text-lg md:text-2xl font-bold text-gray-900 truncate">
+                ${egresosMesActual.toLocaleString()}
+              </p>
+              <p className="text-xs text-gray-500">ARS</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow col-span-2 lg:col-span-1">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
-              <TrendingUp className="h-6 w-6 text-blue-600" />
+              <TrendingUp className="h-4 w-4 md:h-6 md:w-6 text-blue-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Balance Mensual</p>
-              <p className={`text-2xl font-bold ${totalIngresos - egresosMesActual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${(totalIngresos - egresosMesActual).toLocaleString()} ARS
+            <div className="ml-2 md:ml-4 min-w-0 flex-1">
+              <p className="text-xs md:text-sm font-medium text-gray-600 truncate">Balance Mensual</p>
+              <p className={`text-lg md:text-2xl font-bold truncate ${totalIngresos - egresosMesActual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                ${(totalIngresos - egresosMesActual).toLocaleString()}
               </p>
+              <p className="text-xs text-gray-500">ARS</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow col-span-2 lg:col-span-1">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
-              <ArrowUpDown className="h-6 w-6 text-purple-600" />
+              <ArrowUpDown className="h-4 w-4 md:h-6 md:w-6 text-purple-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Cambios de Divisa</p>
-              <p className="text-2xl font-bold text-gray-900">{cambios.length}</p>
+            <div className="ml-2 md:ml-4 min-w-0 flex-1">
+              <p className="text-xs md:text-sm font-medium text-gray-600 truncate">Cambios de Divisa</p>
+              <p className="text-lg md:text-2xl font-bold text-gray-900">{cambios.length}</p>
+              <p className="text-xs text-gray-500">Operaciones</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Resumen Mensual */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      {/* Resumen Mensual - Stack en móvil */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 px-4 md:px-0">
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Últimos Movimientos</h2>
           <div className="space-y-3">
             {ultimosMovimientos.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No hay movimientos registrados</p>
+              <p className="text-gray-500 text-center py-4 text-sm">No hay movimientos registrados</p>
             ) : (
               ultimosMovimientos.map((mov, index) => (
                 <div key={index} className={`flex justify-between items-center p-3 rounded-lg ${
                   mov.tipo === 'ingreso' ? 'bg-green-50' : mov.tipo === 'egreso' ? 'bg-red-50' : 'bg-blue-50'
                 }`}>
-                  <div>
-                    <p className="font-medium text-gray-900">{mov.descripcion}</p>
-                    <p className="text-sm text-gray-600">{new Date(mov.fecha).toLocaleDateString('es-ES')}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-gray-900 text-sm truncate">{mov.descripcion}</p>
+                    <p className="text-xs text-gray-600">{new Date(mov.fecha).toLocaleDateString('es-ES')}</p>
                   </div>
-                  <p className={`font-bold ${
+                  <p className={`font-bold text-sm ml-2 ${
                     mov.tipo === 'ingreso' ? 'text-green-600' : mov.tipo === 'egreso' ? 'text-red-600' : 'text-blue-600'
                   }`}>
                     {mov.tipo === 'ingreso' ? '+' : mov.tipo === 'egreso' ? '-' : ''}${mov.monto.toLocaleString()} {mov.moneda}
@@ -154,7 +164,7 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Resumen Mensual</h2>
           <div className="space-y-4">
             <div>

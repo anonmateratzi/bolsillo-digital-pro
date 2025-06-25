@@ -1,12 +1,12 @@
 
 import React from 'react';
 import { Layout } from '@/components/Layout';
-import { Inversiones } from '@/components/Inversiones';
+import { InversionesEnhanced } from '@/components/InversionesEnhanced';
 
 const InversionesPage = () => {
   return (
     <Layout>
-      <Inversiones />
+      <InversionesEnhanced />
     </Layout>
   );
 };

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { DollarSign, ArrowUpDown, TrendingUp, ArrowDown, BarChart3, LineChart } from 'lucide-react';
+import { DollarSign, ArrowUpDown, TrendingUp, ArrowDown, BarChart3, LineChart, PieChart } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
@@ -31,6 +31,11 @@ export const Sidebar: React.FC = () => {
       path: '/egresos', 
       icon: ArrowDown, 
       label: 'Egresos' 
+    },
+    { 
+      path: '/analisis', 
+      icon: PieChart, 
+      label: 'Análisis Temporal' 
     },
     { 
       path: '/inflacion', 
