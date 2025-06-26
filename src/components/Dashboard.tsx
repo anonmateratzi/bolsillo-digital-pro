@@ -1,17 +1,18 @@
-
 import React from 'react';
 import { DollarSign, TrendingUp, ArrowDown, ArrowUpDown, Percent } from 'lucide-react';
 import { useIngresos } from '@/hooks/useIngresos';
 import { useEgresos } from '@/hooks/useEgresos';
 import { useCambiosDivisa } from '@/hooks/useCambiosDivisa';
+import { useBalancesConsolidados } from '@/hooks/useBalancesConsolidados';
 import { BalancesTable } from '@/components/BalancesTable';
 
 export const Dashboard: React.FC = () => {
   const { sueldoFijo, ingresosExtras, loading: loadingIngresos } = useIngresos();
   const { egresos, loading: loadingEgresos } = useEgresos();
   const { cambios, loading: loadingCambios } = useCambiosDivisa();
+  const { tasaUSD, loading: loadingBalances } = useBalancesConsolidados();
 
-  // Calcular totales del mes actual
+  // Calcular totales del mes actual - usar tasa real del USD
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
@@ -20,7 +21,7 @@ export const Dashboard: React.FC = () => {
       const fecha = new Date(ingreso.fecha);
       return fecha.getMonth() + 1 === currentMonth && fecha.getFullYear() === currentYear;
     })
-    .reduce((sum, ingreso) => sum + (ingreso.moneda === 'USD' ? ingreso.monto * 1000 : ingreso.monto), 0);
+    .reduce((sum, ingreso) => sum + (ingreso.moneda === 'USD' ? ingreso.monto * tasaUSD : ingreso.monto), 0);
 
   const totalIngresos = (sueldoFijo?.monto || 0) + ingresosMesActual;
 
@@ -29,7 +30,7 @@ export const Dashboard: React.FC = () => {
       const fecha = new Date(egreso.fecha);
       return fecha.getMonth() + 1 === currentMonth && fecha.getFullYear() === currentYear;
     })
-    .reduce((sum, egreso) => sum + (egreso.moneda === 'USD' ? egreso.monto * 1000 : egreso.monto), 0);
+    .reduce((sum, egreso) => sum + (egreso.moneda === 'USD' ? egreso.monto * tasaUSD : egreso.monto), 0);
 
   const ahorroMensual = totalIngresos - egresosMesActual;
   const porcentajeAhorroMensual = totalIngresos > 0 ? (ahorroMensual / totalIngresos) * 100 : 0;
@@ -59,7 +60,7 @@ export const Dashboard: React.FC = () => {
     }))
   ].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).slice(0, 3);
 
-  if (loadingIngresos || loadingEgresos || loadingCambios) {
+  if (loadingIngresos || loadingEgresos || loadingCambios || loadingBalances) {
     return (
       <div className="flex justify-center items-center h-64">
         <p className="text-gray-500">Cargando dashboard...</p>
@@ -71,7 +72,12 @@ export const Dashboard: React.FC = () => {
     <div className="space-y-4 md:space-y-6">
       <div className="px-4 md:px-0">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard Financiero</h1>
-        <p className="text-gray-600 mt-2 text-sm md:text-base">Resumen de tu situación financiera actual</p>
+        <p className="text-gray-600 mt-2 text-sm md:text-base">
+          Resumen de tu situación financiera actual
+          <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+            USD: ${tasaUSD.toLocaleString()} ARS (CriptoYa)
+          </span>
+        </p>
       </div>
 
       {/* Patrimonio Consolidado */}
