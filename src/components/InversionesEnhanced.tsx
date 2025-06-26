@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { TrendingUp, Plus, Edit, RefreshCw, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,10 +22,11 @@ export const InversionesEnhanced: React.FC = () => {
 
   const actualizarPreciosAutomaticamente = async () => {
     for (const inversion of inversiones) {
-      const precioActual = precios[inversion.ticker];
-      if (precioActual && precioActual.price !== inversion.precio_actual) {
+      const precioAPI = precios[inversion.ticker];
+      // Solo actualizar si no tiene precio actual o si el precio de la API es muy diferente
+      if (precioAPI && (!inversion.precio_actual || Math.abs(precioAPI.price - inversion.precio_actual) > inversion.precio_actual * 0.05)) {
         await updateInversion(inversion.id, {
-          precio_actual: precioActual.price
+          precio_actual: precioAPI.price
         });
       }
     }
@@ -38,7 +38,8 @@ export const InversionesEnhanced: React.FC = () => {
   };
 
   const calcularGananciaPerdida = (inversion: typeof inversiones[0]) => {
-    const precioActual = precios[inversion.ticker]?.price || inversion.precio_actual;
+    // PRIORIZAR el precio actual del usuario sobre el de la API
+    const precioActual = inversion.precio_actual || precios[inversion.ticker]?.price;
     if (!precioActual || !inversion.precio_compra) return 0;
     
     if (inversion.tipo_inversion === 'cantidad' && inversion.cantidad_activos) {
@@ -53,7 +54,8 @@ export const InversionesEnhanced: React.FC = () => {
   };
 
   const calcularValorActualTotal = (inversion: typeof inversiones[0]) => {
-    const precioActual = precios[inversion.ticker]?.price || inversion.precio_actual;
+    // PRIORIZAR el precio actual del usuario sobre el de la API
+    const precioActual = inversion.precio_actual || precios[inversion.ticker]?.price;
     if (!precioActual) return 0;
     
     if (inversion.tipo_inversion === 'cantidad' && inversion.cantidad_activos) {
@@ -97,7 +99,7 @@ export const InversionesEnhanced: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Inversiones</h1>
-          <p className="text-gray-600 mt-2">Portfolio con precios en tiempo real</p>
+          <p className="text-gray-600 mt-2">Portfolio con precios actualizados</p>
         </div>
         
         <div className="flex gap-2 mt-4 md:mt-0">
@@ -108,10 +110,10 @@ export const InversionesEnhanced: React.FC = () => {
             className="flex items-center gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${loadingPrecios ? 'animate-spin' : ''}`} />
-            Actualizar Precios
+            Obtener Precios (CriptoYa)
           </Button>
           <Button onClick={actualizarPreciosAutomaticamente} variant="outline">
-            Sincronizar BD
+            Sync Precios a BD
           </Button>
         </div>
       </div>
@@ -121,23 +123,23 @@ export const InversionesEnhanced: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-orange-700">
               <AlertCircle className="h-4 w-4" />
-              <span className="text-sm">Error al obtener precios: {errorPrecios}</span>
+              <span className="text-sm">Error al obtener precios de CriptoYa: {errorPrecios}</span>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Resumen del Portfolio con datos en tiempo real */}
+      {/* Resumen del Portfolio */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="text-center">
               <p className="text-sm font-medium text-gray-600">Valor Total</p>
               <p className="text-2xl font-bold text-gray-900">
-                ${valorTotalPortfolio.toLocaleString()} USD
+                ${valorTotalPortfolio.toLocaleString()} ARS
               </p>
               {loadingPrecios && (
-                <p className="text-xs text-blue-600 mt-1">Actualizando precios...</p>
+                <p className="text-xs text-blue-600 mt-1">Consultando CriptoYa...</p>
               )}
             </div>
           </CardContent>
@@ -148,7 +150,7 @@ export const InversionesEnhanced: React.FC = () => {
             <div className="text-center">
               <p className="text-sm font-medium text-gray-600">Ganancia/Pérdida</p>
               <p className={`text-2xl font-bold ${gananciaPerdidaTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {gananciaPerdidaTotal >= 0 ? '+' : ''}${gananciaPerdidaTotal.toFixed(2)} USD
+                {gananciaPerdidaTotal >= 0 ? '+' : ''}${gananciaPerdidaTotal.toFixed(2)} ARS
               </p>
             </div>
           </CardContent>
@@ -166,7 +168,7 @@ export const InversionesEnhanced: React.FC = () => {
         </Card>
       </div>
 
-      {/* Lista de Inversiones con precios actualizados */}
+      {/* Lista de Inversiones */}
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -196,12 +198,13 @@ export const InversionesEnhanced: React.FC = () => {
               </div>
             ) : (
               inversiones.map((inversion) => {
-                const precioTiempoReal = precios[inversion.ticker];
-                const precioActual = precioTiempoReal?.price || inversion.precio_actual;
+                const precioAPI = precios[inversion.ticker];
+                // PRIORIZAR precio actual del usuario
+                const precioActual = inversion.precio_actual || precioAPI?.price;
                 const gananciaPerdida = calcularGananciaPerdida(inversion);
                 const valorActual = calcularValorActualTotal(inversion);
                 const esGanancia = gananciaPerdida >= 0;
-                const cambio24h = precioTiempoReal?.changePercent || 0;
+                const tieneAPI = !!precioAPI;
                 
                 return (
                   <div key={inversion.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
@@ -210,11 +213,17 @@ export const InversionesEnhanced: React.FC = () => {
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="font-semibold text-gray-900">{inversion.ticker}</p>
-                            {precioTiempoReal && (
-                              <span className={`text-xs px-2 py-1 rounded ${
-                                cambio24h >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                              }`}>
-                                {cambio24h >= 0 ? '+' : ''}{cambio24h.toFixed(2)}% 24h
+                            {inversion.precio_actual ? (
+                              <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700">
+                                Precio Manual
+                              </span>
+                            ) : tieneAPI ? (
+                              <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">
+                                CriptoYa
+                              </span>
+                            ) : (
+                              <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
+                                Sin Precio
                               </span>
                             )}
                           </div>
@@ -241,26 +250,21 @@ export const InversionesEnhanced: React.FC = () => {
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">
-                            Precio Actual
-                            {precioTiempoReal && (
-                              <span className="ml-1 text-green-600">●</span>
-                            )}
-                          </p>
+                          <p className="text-xs text-gray-500">Precio Actual</p>
                           <p className="font-medium">
-                            ${precioActual?.toLocaleString() || 'N/A'} {inversion.moneda_origen}
+                            ${precioActual?.toLocaleString() || 'N/A'} ARS
                           </p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-500">Valor Total</p>
                           <p className="font-medium">
-                            ${valorActual.toLocaleString()} {inversion.moneda_origen}
+                            ${valorActual.toLocaleString()} ARS
                           </p>
                         </div>
                         <div>
                           <p className="text-xs text-gray-500">Ganancia/Pérdida</p>
                           <p className={`font-bold ${esGanancia ? 'text-green-600' : 'text-red-600'}`}>
-                            {esGanancia ? '+' : ''}${gananciaPerdida.toFixed(2)} {inversion.moneda_origen}
+                            {esGanancia ? '+' : ''}${gananciaPerdida.toFixed(2)} ARS
                           </p>
                         </div>
                       </div>

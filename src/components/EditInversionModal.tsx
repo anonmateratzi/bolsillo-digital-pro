@@ -75,17 +75,20 @@ export const EditInversionModal: React.FC<EditInversionModalProps> = ({
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="precio_actual">Precio Actual ({inversion.moneda_origen})</Label>
+            <Label htmlFor="precio_actual">Precio Actual (ARS)</Label>
             <Input
               id="precio_actual"
               type="number"
-              step="0.0001"
+              step="0.01"
               value={formData.precio_actual}
               onChange={(e) => setFormData(prev => ({ ...prev, precio_actual: e.target.value }))}
-              placeholder="Ingresa el precio actual"
+              placeholder="Ingresa el precio actual en pesos argentinos"
             />
             <p className="text-sm text-gray-500">
               Precio de compra: ${inversion.precio_compra?.toLocaleString() || 'N/A'} {inversion.moneda_origen}
+            </p>
+            <p className="text-xs text-blue-600">
+              💡 Tip: Si dejas vacío, se usará el precio de CriptoYa (cuando esté disponible)
             </p>
           </div>
 
