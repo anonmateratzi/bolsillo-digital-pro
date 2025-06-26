@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -29,7 +28,7 @@ export const AnalisisTemporal: React.FC = () => {
   };
 
   const datosEvolucion = useMemo(() => {
-    const fechaInicio = obtenerFeclaInicio(periodoSeleccionado);
+    const fechaInicio = obtenerFechaInicio(periodoSeleccionado);
     const mesesData: Record<string, { mes: string; ingresos: number; egresos: number; ahorro: number }> = {};
 
     // Generar meses vacíos
